@@ -1,0 +1,120 @@
+@import "tailwindcss";
+
+/* ── CAP WAKTU — design tokens ──────────────────────────────────────────
+   Three brand colours, three jobs. Never mixed, never decorative:
+     cerulean = geo & data      (coordinates, GPS, structure, focus)
+     magenta  = action & live   (primary action, recording state, required)
+     citrus   = the stamp       (the legend itself, marked/captured state)
+   ─────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --ink:        #0c2333;
+  --ink-70:     #3c5567;
+  --ink-45:     #71889a;
+  --paper:      #f1f3ea;
+  --paper-deep: #e5e8db;
+  --card:       #fbfcf7;
+
+  --cerulean:      #218dc2;
+  --cerulean-deep: #14638b;
+  --cerulean-wash: #e2f0f8;
+  --magenta:       #df2489;
+  --magenta-deep:  #a8175f;
+  --magenta-wash:  #fce4f1;
+  --citrus:        #d6d871;
+  --citrus-deep:   #9a9c31;
+  --citrus-wash:   #f3f4d9;
+
+  --rule:      color-mix(in oklab, var(--ink) 14%, transparent);
+  --rule-firm: color-mix(in oklab, var(--ink) 26%, transparent);
+
+  --grid: 34px;
+}
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-ink-70: var(--ink-70);
+  --color-ink-45: var(--ink-45);
+  --color-paper: var(--paper);
+  --color-paper-deep: var(--paper-deep);
+  --color-card: var(--card);
+  --color-cerulean: var(--cerulean);
+  --color-cerulean-deep: var(--cerulean-deep);
+  --color-cerulean-wash: var(--cerulean-wash);
+  --color-magenta: var(--magenta);
+  --color-magenta-deep: var(--magenta-deep);
+  --color-magenta-wash: var(--magenta-wash);
+  --color-citrus: var(--citrus);
+  --color-citrus-deep: var(--citrus-deep);
+  --color-citrus-wash: var(--citrus-wash);
+  --color-rule: var(--rule);
+  --color-rule-firm: var(--rule-firm);
+
+  --font-display: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-public-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-martian-mono), ui-monospace, "SFMono-Regular", monospace;
+}
+
+* { border-color: var(--rule); }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  background-color: var(--paper);
+  /* Coordinate grid: this app lives on a grid, so the page does too. */
+  background-image:
+    linear-gradient(to right, color-mix(in oklab, var(--ink) 5%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, var(--ink) 5%, transparent) 1px, transparent 1px);
+  background-size: var(--grid) var(--grid);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "cv05" 1;
+}
+
+/* Display face rides the width axis — signage-wide, never body-wide. */
+.font-display { font-variation-settings: "wdth" 118; letter-spacing: -0.015em; }
+.font-mono    { font-variation-settings: "wdth" 87; }
+
+/* Eyebrow / channel label — the utility voice of the interface */
+.label-eyebrow {
+  font-family: var(--font-mono);
+  font-variation-settings: "wdth" 82;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/* Tabular digits so the clock never jitters as it ticks */
+.tnum { font-variant-numeric: tabular-nums; }
+
+:focus-visible {
+  outline: 2px solid var(--cerulean);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+::selection { background: var(--citrus); color: var(--ink); }
+
+input[type="range"] { accent-color: var(--cerulean); }
+
+@keyframes cw-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.35; transform: scale(0.82); }
+}
+.animate-live { animation: cw-pulse 1.6s ease-in-out infinite; }
+
+@keyframes cw-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+.animate-rise { animation: cw-rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
