@@ -53,6 +53,20 @@ export function findFormat(value: string): DateFormatOption {
 /** Fixed date behind the dropdown previews, so server and client agree. */
 export const SAMPLE_DATE = new Date(2026, 7, 20, 14, 32, 7);
 
+/**
+ * Preview text for the format dropdown.
+ *
+ * The zone token deliberately stays generic. It resolves from whichever clock
+ * renders it, so a server in UTC would print "UTC+00:00" into the HTML and the
+ * reader's browser would then print "WIB" — a hydration mismatch, and a
+ * misleading preview besides. The stamp itself still uses the real zone.
+ */
+export function formatSample(pattern: string): string {
+  const withoutZone = pattern.replace("Z", "").trimEnd();
+  const sample = formatStamp(SAMPLE_DATE, withoutZone);
+  return pattern.includes("Z") ? `${sample} WIB/WITA/WIT` : sample;
+}
+
 const MONTHS_LONG = [
   "Januari", "Februari", "Maret", "April", "Mei", "Juni",
   "Juli", "Agustus", "September", "Oktober", "November", "Desember",

@@ -83,7 +83,31 @@ const globalForDb = globalThis as unknown as {
   capWaktuDb?: ReturnType<typeof create>;
 };
 
-export const db = globalForDb.capWaktuDb ?? create();
-if (process.env.NODE_ENV !== "production") globalForDb.capWaktuDb = db;
+let instance: ReturnType<typeof create> | null = null;
+
+function connect() {
+  if (!instance) {
+    instance = globalForDb.capWaktuDb ?? create();
+    if (process.env.NODE_ENV !== "production") globalForDb.capWaktuDb = instance;
+  }
+  return instance;
+}
+
+/**
+ * Connects on first use, not on import.
+ *
+ * `next build` imports every route module to collect its config, and it does
+ * so across many workers at once. Connecting at import time meant the build
+ * itself opened the database and raced its own workers through the migrations
+ * — invisible on a machine where the file already existed, fatal in a clean
+ * container. Nothing here touches disk until a request actually asks for data.
+ */
+export const db = new Proxy({} as ReturnType<typeof create>, {
+  get(_target, property, receiver) {
+    const real = connect() as object;
+    const value = Reflect.get(real, property, receiver);
+    return typeof value === "function" ? value.bind(real) : value;
+  },
+});
 
 export { schema };

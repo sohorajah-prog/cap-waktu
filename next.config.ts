@@ -10,10 +10,14 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     /**
      * better-sqlite3 loads its binding at runtime rather than importing it,
-     * so dependency tracing cannot see it. Every Linux prebuild is kept:
-     * the image may end up on x64 or arm64, glibc or musl.
+     * so dependency tracing cannot see it. Both locations are kept: the
+     * bundled prebuilds, and build/Release, where npm's node-gyp fallback
+     * puts the binding it compiles during a container build.
      */
-    "/**": ["./node_modules/better-sqlite3/prebuilds/**"],
+    "/**": [
+      "./node_modules/better-sqlite3/prebuilds/**",
+      "./node_modules/better-sqlite3/build/Release/**",
+    ],
   },
 
   outputFileTracingExcludes: {

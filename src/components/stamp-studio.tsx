@@ -18,8 +18,8 @@ import { useNow } from "@/components/live-clock";
 import {
   DATE_FORMAT_GROUPS,
   formatCoords,
+  formatSample,
   formatStamp,
-  SAMPLE_DATE,
 } from "@/lib/format";
 import { readJson } from "@/lib/api";
 import { saveResult } from "@/lib/history";
@@ -523,9 +523,9 @@ export function StampStudio() {
                         {/* A fixed sample date: this control picks a format,
                             it does not set the time. The legend takes the
                             real clock. */}
-                        {formatStamp(SAMPLE_DATE, option.date)}
+                        {formatSample(option.date)}
                         {" · "}
-                        {formatStamp(SAMPLE_DATE, option.time)}
+                        {formatSample(option.time)}
                       </option>
                     ))}
                   </optgroup>

@@ -249,5 +249,25 @@ docker build -t cap-waktu .
 docker run -p 3000:3000 -v cap-waktu-data:/app/data cap-waktu
 ```
 
+Image jadi sekitar 325 MB. Sudah diuji: boot dari volume kosong menjalankan
+migrasi lalu memuat 91.019 wilayah dalam ~0,6 detik, health check hijau, alur
+unggah sampai simpan riwayat berhasil, pencarian wilayah ke Nominatim tembus
+dari dalam wadah, dan isi volume bertahan setelah wadahnya dibuat ulang dari
+image baru.
+
+### Dua hal yang khusus ditangani untuk wadah
+
+**Koneksi basis data dibuka saat dipakai, bukan saat modul diimpor.**
+`next build` mengimpor tiap modul rute untuk membaca konfigurasinya, dan
+melakukannya dengan belasan worker sekaligus. Membuka koneksi saat impor
+membuat proses build itu sendiri menjalankan migrasi dan saling berebut antar
+worker — tak terlihat di mesin yang basis datanya sudah ada, tetapi gagal total
+di wadah bersih.
+
+**`better-sqlite3` menyertakan `binding.gyp` tanpa script `install`.** Dalam
+keadaan itu npm otomatis menjalankan `node-gyp` dan mengabaikan prebuild yang
+sebenarnya ikut dalam paket. Karena itu stage `deps` memasang `python3`,
+`make`, dan `g++`; ketiganya tidak ikut ke image akhir.
+
 Gambar asli ikut dikirim ke server agar tabel `uploads` terisi sesuai skema.
 Pemrosesan legenda tetap berjalan sepenuhnya di perangkat pengguna.

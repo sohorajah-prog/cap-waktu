@@ -1,13 +1,16 @@
 # syntax=docker/dockerfile:1
 
-# Alpine is safe here: better-sqlite3 ships a musl prebuild, so no build
-# toolchain is needed to install it.
 FROM node:24-alpine AS base
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # ── Dependencies ───────────────────────────────────────────────────────────
 FROM base AS deps
 WORKDIR /app
+# better-sqlite3 ships a binding.gyp but declares no install script, and npm
+# answers that by running node-gyp itself — the bundled prebuilds are ignored.
+# So the toolchain has to be here. It stays in this stage: only node_modules
+# travels onward, never these packages.
+RUN apk add --no-cache python3 make g++
 COPY package.json package-lock.json ./
 RUN npm ci
 
