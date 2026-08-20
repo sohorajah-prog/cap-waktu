@@ -13,6 +13,8 @@ diunduh dan tercatat di riwayat.
 - Koordinat otomatis dari GPS perangkat, atau diisi manual
 - Wilayah administratif terisi otomatis dari koordinat, dari provinsi sampai
   kelurahan/desa
+- Waktu pada legenda diambil dari jam perangkat saat itu juga, bukan dari
+  tanggal berkas foto
 - Format tanggal sampai menit atau sampai detik, dengan zona waktu
   (WIB/WITA/WIT) yang mengikuti perangkat
 - Pengaturan legenda: posisi, jenis huruf, ukuran, warna
@@ -89,6 +91,17 @@ npx drizzle-kit generate # migrasi baru setelah skema berubah
 | `GET` | `/api/uploads/:id/image` | Berkas gambar asli |
 | `GET` | `/api/wilayah?parent=` | Daftar wilayah satu tingkat di bawah kode induk |
 | `GET` | `/api/wilayah/lookup?lat=&lon=` | Menebak wilayah dari koordinat (reverse geocoding) |
+
+### Waktu pada legenda
+
+Pilihan **Format tanggal** hanya menentukan tata letaknya; contoh di dropdown
+memakai tanggal contoh tetap supaya jelas itu format, bukan nilai.
+
+Waktu yang tercetak selalu berasal dari jam perangkat. Pratinjau berdetak tiap
+detik, dan angka yang masuk ke berkas dikunci pada saat tombol unduh ditekan —
+bukan pada saat foto dipilih. Tanggal berkas (`lastModified`) sengaja tidak
+dipakai: foto yang diteruskan lewat aplikasi pesan membawa tanggal penyalinan,
+bukan waktu pengambilan, sehingga tidak layak jadi bukti waktu.
 
 ### Pengisian wilayah dari koordinat
 

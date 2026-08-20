@@ -44,7 +44,6 @@ export function StampStudio() {
   // The original File is kept so the saved result can be traced back to it.
   const [sourceFile, setSourceFile] = useState<File | null>(null);
   const [fileName, setFileName] = useState("");
-  const [stampedAt, setStampedAt] = useState<Date | null>(null);
   const [gps, setGps] = useState<GpsState>("idle");
   const [gpsMessage, setGpsMessage] = useState("");
   const [format, setFormat] = useState<"jpg" | "png">("jpg");
@@ -58,10 +57,13 @@ export function StampStudio() {
   const cameraRef = useRef<HTMLInputElement>(null);
   const objectUrl = useRef<string | null>(null);
 
-  // Before a photo exists the frame runs a live clock. Once one is loaded the
-  // time freezes at the moment of upload, so the stamp records a real moment.
-  const liveNow = useNow(!image);
-  const at = image ? stampedAt : liveNow;
+  /**
+   * The legend always carries the real clock, before and after a photo is
+   * loaded. A file's own timestamp is not the moment of documentation — a
+   * photo forwarded through chat carries the date it was copied — so the
+   * stamp is fixed at the instant the user presses download.
+   */
+  const at = useNow();
 
   const patch = useCallback(
     (next: Partial<StampSettings>) => setSettings((s) => ({ ...s, ...next })),
@@ -85,7 +87,6 @@ export function StampStudio() {
       setImage(img);
       setSourceFile(file);
       setFileName(file.name);
-      setStampedAt(new Date(file.lastModified || Date.now()));
       setSaved("");
     };
     img.src = url;
@@ -97,7 +98,6 @@ export function StampStudio() {
     setImage(null);
     setSourceFile(null);
     setFileName("");
-    setStampedAt(null);
     setSaved("");
   };
 
@@ -176,10 +176,12 @@ export function StampStudio() {
   };
 
   const download = async () => {
-    if (!image || !at || !sourceFile) return;
+    if (!image || !sourceFile) return;
     setSaving(true);
     setSaveError("");
     try {
+      // The instant the user commits, not whatever the preview last painted.
+      const at = new Date();
       const canvas = await renderStamped(image, settings, at);
       const blob = await canvasToBlob(canvas, format);
       const slug =
@@ -508,7 +510,7 @@ export function StampStudio() {
         <section>
           <StepHeading step="04" title="Tampilan legenda" />
           <div className="space-y-4">
-            <Field label="Format tanggal" htmlFor="format-tanggal">
+            <Field label="Format tanggal" htmlFor="format-tanggal" hint="contoh tampilan">
               <SelectInput
                 id="format-tanggal"
                 value={settings.dateFormat}
@@ -518,9 +520,10 @@ export function StampStudio() {
                   <optgroup key={group.label} label={group.label}>
                     {group.formats.map((pattern) => (
                       <option key={pattern} value={pattern}>
-                        {/* The option previews itself, so it can never drift
-                            from what the format actually renders. */}
-                        {formatStamp(at ?? SAMPLE_DATE, pattern)}
+                        {/* A fixed sample date: this control picks a format,
+                            it does not set the time. The legend takes the
+                            real clock. */}
+                        {formatStamp(SAMPLE_DATE, pattern)}
                       </option>
                     ))}
                   </optgroup>
