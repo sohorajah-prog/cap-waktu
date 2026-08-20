@@ -17,7 +17,8 @@ export type ResultDTO = {
   settings: {
     locationName: string;
     regionCode: string | null;
-    regionLabel: string;
+    /** Innermost first: kelurahan, kecamatan, kabupaten/kota, provinsi. */
+    regionLines: string[];
     latitude: number | null;
     longitude: number | null;
     dateFormat: string;

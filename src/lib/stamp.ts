@@ -46,9 +46,12 @@ export const FONT_COLORS = [
 export type StampSettings = {
   /** Keterangan bebas: nama gudang, patok, atau ruas jalan. */
   locationName: string;
-  /** Wilayah administratif terpilih, sudah dirangkai jadi satu baris. */
   regionCode: string | null;
-  regionLabel: string;
+  /**
+   * Wilayah administratif, terdalam lebih dulu: kelurahan, kecamatan,
+   * kabupaten/kota, provinsi. Satu unsur satu baris pada legenda.
+   */
+  regionLines: string[];
   latitude: number | null;
   longitude: number | null;
   dateFormat: string;
@@ -63,7 +66,7 @@ export type StampSettings = {
 export const DEFAULT_SETTINGS: StampSettings = {
   locationName: "",
   regionCode: null,
-  regionLabel: "",
+  regionLines: [],
   latitude: null,
   longitude: null,
   dateFormat: "DD/MM/YYYY HH:mm",
@@ -75,16 +78,21 @@ export const DEFAULT_SETTINGS: StampSettings = {
 };
 
 /**
- * The legend text, narrowing outward-in: the specific spot, then the
- * administrative region it sits in, then coordinates, then the moment.
+ * The legend text: when, then where on the globe, then where by name —
+ * widening one administrative step per line from the village up to the
+ * province. The free-text detail sits with the place names, ahead of the
+ * village, because it is the most specific of them.
  */
 export function legendLines(settings: StampSettings, at: Date): string[] {
-  const lines: string[] = [];
-  if (settings.locationName.trim()) lines.push(settings.locationName.trim());
-  if (settings.regionLabel.trim()) lines.push(settings.regionLabel.trim());
+  const lines: string[] = [formatStamp(at, settings.dateFormat)];
+
   const coords = formatCoords(settings.latitude, settings.longitude);
   if (coords) lines.push(coords);
-  lines.push(formatStamp(at, settings.dateFormat));
+
+  if (settings.locationName.trim()) lines.push(settings.locationName.trim());
+  for (const part of settings.regionLines) {
+    if (part.trim()) lines.push(part.trim());
+  }
   return lines;
 }
 

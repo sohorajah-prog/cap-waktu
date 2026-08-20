@@ -100,6 +100,25 @@ npx drizzle-kit generate # migrasi baru setelah skema berubah
 | `GET` | `/api/wilayah?parent=` | Daftar wilayah satu tingkat di bawah kode induk |
 | `GET` | `/api/wilayah/lookup?lat=&lon=` | Menebak wilayah dari koordinat (reverse geocoding) |
 
+### Susunan legenda
+
+Satu unsur satu baris, dari waktu ke tempat, lalu melebar setingkat demi
+setingkat dari kelurahan sampai provinsi:
+
+```
+20/08/2026 08:14:37              format tanggal
+6.241586° LS  106.995400° BT     titik koordinat
+Gudang B, Jl. Raya Bekasi KM 24  detail tempat
+Kel. Margajaya                   kelurahan/desa
+Kec. Bekasi Selatan              kecamatan
+Kota Bekasi                      kabupaten/kota
+Jawa Barat                       provinsi
+```
+
+Baris yang kosong dilewati, bukan disisakan kosong: tanpa koordinat, tanpa
+detail tempat, atau dengan wilayah yang hanya terisi sampai provinsi, legenda
+menyusut sendiri. Baris tanggal selalu ada.
+
 ### Waktu pada legenda
 
 Pilihan **Format tanggal** hanya menentukan tata letaknya; contoh di dropdown

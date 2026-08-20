@@ -44,16 +44,21 @@ function decorate(region: Region): string {
 }
 
 /**
- * Builds the legend line, innermost first — how an Indonesian address is read
- * aloud: "Kel./Desa Margahayu, Kec. Bekasi Timur, Kota Bekasi, Jawa Barat".
+ * The administrative parts, innermost first — kelurahan, kecamatan,
+ * kabupaten/kota, provinsi. The legend prints one per line, so they are kept
+ * apart rather than pre-joined.
  */
-export function regionLabel(chain: Region[]): string {
+export function regionLines(chain: Region[]): string[] {
   return chain
     .filter(Boolean)
     .slice()
     .sort((a, b) => b.level - a.level)
-    .map(decorate)
-    .join(", ");
+    .map(decorate);
+}
+
+/** The same parts on one line, for places too narrow to list them. */
+export function regionLabel(chain: Region[]): string {
+  return regionLines(chain).join(", ");
 }
 
 /** Ancestor codes of "32.75.01.1001" → ["32", "32.75", "32.75.01"]. */

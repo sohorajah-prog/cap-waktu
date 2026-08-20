@@ -170,7 +170,7 @@ function DetailDialog({
 
   const rows: [string, string][] = [
     ["Detail tempat", entry.settings.locationName || "—"],
-    ["Wilayah", entry.settings.regionLabel || "—"],
+    ["Wilayah", entry.settings.regionLines.join(", ") || "—"],
     [
       "Koordinat",
       formatCoords(entry.settings.latitude, entry.settings.longitude) || "—",

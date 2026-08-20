@@ -15,7 +15,7 @@ const FORMATS = ["jpg", "png"] as const;
 export type ResultSettingsInput = {
   locationName: string;
   regionCode: string | null;
-  regionLabel: string;
+  regionLines: string[];
   latitude: string | null;
   longitude: string | null;
   dateFormat: string;
@@ -95,15 +95,20 @@ export function parseSettings(raw: unknown): ResultSettingsInput {
   if (regionCode !== null && !/^[0-9]{2}(\.[0-9]{2}){0,2}(\.[0-9]{4})?$/.test(regionCode)) {
     throw new InvalidInput("Kode wilayah tidak sah.");
   }
-  const regionLabel = String(input.regionLabel ?? "").trim();
-  if (regionLabel.length > 250) {
-    throw new InvalidInput("Nama wilayah terlalu panjang.");
+  const rawLines = Array.isArray(input.regionLines) ? input.regionLines : [];
+  if (rawLines.length > 4) {
+    throw new InvalidInput("Wilayah paling banyak empat tingkat.");
+  }
+  const regionLines = rawLines.map((line) => String(line).trim()).filter(Boolean);
+  // Newlines would split one part into two legend lines.
+  if (regionLines.some((line) => line.length > 120 || /[\r\n]/.test(line))) {
+    throw new InvalidInput("Nama wilayah tidak sah.");
   }
 
   return {
     locationName,
     regionCode,
-    regionLabel,
+    regionLines,
     latitude: coordinate(input.latitude, "Lintang"),
     longitude: coordinate(input.longitude, "Bujur"),
     dateFormat,
@@ -136,7 +141,8 @@ export function toDTO({ results: result, uploads: upload }: JoinedRow): ResultDT
     settings: {
       locationName: result.locationName,
       regionCode: result.regionCode,
-      regionLabel: result.regionLabel ?? "",
+      // Stored one part per line; older rows hold a single joined sentence.
+      regionLines: (result.regionLabel ?? "").split("\n").filter(Boolean),
       latitude: result.latitude === null ? null : Number(result.latitude),
       longitude: result.longitude === null ? null : Number(result.longitude),
       dateFormat: result.dateFormat,

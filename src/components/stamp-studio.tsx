@@ -23,7 +23,7 @@ import {
 } from "@/lib/format";
 import { readJson } from "@/lib/api";
 import { saveResult } from "@/lib/history";
-import { LEVELS, type Region } from "@/lib/wilayah";
+import { LEVELS, regionLines, type Region } from "@/lib/wilayah";
 import {
   canvasToBlob,
   DEFAULT_SETTINGS,
@@ -128,7 +128,7 @@ export function StampStudio() {
   };
 
   const clearCoords = () => {
-    patch({ latitude: null, longitude: null, regionCode: null, regionLabel: "" });
+    patch({ latitude: null, longitude: null, regionCode: null, regionLines: [] });
     setGps("idle");
     setGpsMessage("");
     setLookup("idle");
@@ -159,7 +159,7 @@ export function StampStudio() {
 
       patch({
         regionCode: data.regions[data.regions.length - 1].code,
-        regionLabel: data.label,
+        regionLines: regionLines(data.regions),
       });
       setLookup(data.regions.length === 4 ? "ready" : "partial");
       setLookupNote(
@@ -451,7 +451,7 @@ export function StampStudio() {
         <section>
           <StepHeading step="03" title="Lokasi" />
           <div className="space-y-4">
-            <Field label="Detail tempat" htmlFor="lokasi" hint="baris pertama legenda">
+            <Field label="Detail tempat" htmlFor="lokasi" hint="tampil di atas kelurahan">
               <TextInput
                 id="lokasi"
                 value={settings.locationName}
@@ -480,7 +480,7 @@ export function StampStudio() {
               </div>
 
               <p className="px-3 py-3 text-[0.82rem] leading-relaxed text-ink">
-                {settings.regionLabel || (
+                {settings.regionLines.join(", ") || (
                   <span className="text-ink-45">
                     Belum terisi. Ambil koordinat, lalu tekan “Isi wilayah dari
                     koordinat”.

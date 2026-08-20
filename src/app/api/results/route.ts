@@ -92,7 +92,8 @@ export async function POST(request: Request) {
           uploadId: upload.id,
           locationName: settings.locationName,
           regionCode: settings.regionCode,
-          regionLabel: settings.regionLabel,
+          // One administrative part per line, matching how the legend prints.
+          regionLabel: settings.regionLines.join("\n"),
           latitude: settings.latitude,
           longitude: settings.longitude,
           dateFormat: settings.dateFormat,
