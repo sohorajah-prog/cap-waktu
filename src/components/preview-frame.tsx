@@ -151,7 +151,13 @@ function MockLegend({
         <div className="h-[3px] w-full bg-citrus" />
         <div className="bg-black/45 px-3 py-2.5">
           {(lines.length ? lines : ["Nama lokasi akan tampil di sini"]).map((line, i) => (
-            <p key={i} className="tnum font-mono text-[0.64rem] leading-relaxed text-white/80">
+            <p
+              key={i}
+              className={cn(
+                "tnum font-mono text-[0.64rem] leading-relaxed text-white/80",
+                position === "kanan" && "text-right",
+              )}
+            >
               {line}
             </p>
           ))}

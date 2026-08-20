@@ -175,6 +175,10 @@ export function drawLegend({ ctx, width, height, settings, at }: DrawArgs) {
     x = settings.legendPosition === "kiri" ? size * 0.6 : width - blockW - size * 0.6;
   }
 
+  // Anchored right, the block reads from the right edge inward, so the text
+  // and the keyline mirror across with it.
+  const alignRight = settings.legendPosition === "kanan";
+
   if (settings.showPlate) {
     ctx.fillStyle = "rgba(12, 35, 51, 0.62)";
     ctx.fillRect(x, y, blockW, blockH);
@@ -183,6 +187,7 @@ export function drawLegend({ ctx, width, height, settings, at }: DrawArgs) {
     const keyline = Math.max(2, size * 0.11);
     if (settings.legendPosition === "atas") ctx.fillRect(x, y + blockH - keyline, blockW, keyline);
     else if (isEdgeBar) ctx.fillRect(x, y, blockW, keyline);
+    else if (alignRight) ctx.fillRect(x + blockW - keyline, y, keyline, blockH);
     else ctx.fillRect(x, y, keyline, blockH);
   } else {
     ctx.shadowColor = "rgba(0, 0, 0, 0.72)";
@@ -191,7 +196,9 @@ export function drawLegend({ ctx, width, height, settings, at }: DrawArgs) {
   }
 
   ctx.fillStyle = settings.fontColor;
-  const textX = x + padX + (settings.showPlate && !isEdgeBar ? size * 0.2 : 0);
+  ctx.textAlign = alignRight ? "right" : "left";
+  const inset = settings.showPlate && !isEdgeBar ? size * 0.2 : 0;
+  const textX = alignRight ? x + blockW - padX - inset : x + padX + inset;
   lines.forEach((line, i) => {
     ctx.fillText(line, textX, y + padY + i * lineHeight);
   });

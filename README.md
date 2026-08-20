@@ -115,6 +115,9 @@ Kota Bekasi                      kabupaten/kota
 Jawa Barat                       provinsi
 ```
 
+Posisi legenda **Kanan** membuat teksnya rata kanan dan garis citrus berpindah
+ke tepi kanan blok; posisi lain rata kiri.
+
 Baris yang kosong dilewati, bukan disisakan kosong: tanpa koordinat, tanpa
 detail tempat, atau dengan wilayah yang hanya terisi sampai provinsi, legenda
 menyusut sendiri. Baris tanggal selalu ada.
