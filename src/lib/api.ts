@@ -16,6 +16,8 @@ export type ResultDTO = {
   originalUrl: string;
   settings: {
     locationName: string;
+    regionCode: string | null;
+    regionLabel: string;
     latitude: number | null;
     longitude: number | null;
     dateFormat: string;

@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Field, SegmentedControl, SelectInput, TextInput } from "@/components/ui/field";
 import { PreviewFrame } from "@/components/preview-frame";
 import { StepHeading } from "@/components/step-heading";
+import { WilayahPicker } from "@/components/wilayah-picker";
 import { useNow } from "@/components/live-clock";
 import { DATE_FORMATS, formatCoords, formatStamp } from "@/lib/format";
 import { saveResult } from "@/lib/history";
@@ -287,9 +288,9 @@ export function StampStudio() {
         </section>
 
         <section>
-          <StepHeading step="02" title="Lokasi & koordinat" />
+          <StepHeading step="02" title="Lokasi" />
           <div className="space-y-4">
-            <Field label="Nama lokasi" htmlFor="lokasi" hint="baris pertama legenda">
+            <Field label="Detail tempat" htmlFor="lokasi" hint="baris pertama legenda">
               <TextInput
                 id="lokasi"
                 value={settings.locationName}
@@ -299,6 +300,17 @@ export function StampStudio() {
               />
             </Field>
 
+            <WilayahPicker
+              onChange={({ code, label }) =>
+                patch({ regionCode: code, regionLabel: label })
+              }
+            />
+          </div>
+        </section>
+
+        <section>
+          <StepHeading step="03" title="Koordinat" />
+          <div className="space-y-4">
             <div className="border border-rule-firm bg-card">
               <div className="flex items-center gap-2 border-b border-rule px-3 py-2.5">
                 <span
@@ -384,7 +396,7 @@ export function StampStudio() {
         </section>
 
         <section>
-          <StepHeading step="03" title="Tampilan legenda" />
+          <StepHeading step="04" title="Tampilan legenda" />
           <div className="space-y-4">
             <Field label="Format tanggal" htmlFor="format-tanggal">
               <SelectInput

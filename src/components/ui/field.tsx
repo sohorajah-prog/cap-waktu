@@ -85,20 +85,38 @@ export function SegmentedControl<T extends string>({
   );
 }
 
+/**
+ * The chevron is a real element rather than a background data-URI: an inline
+ * SVG url() carries literal spaces, which Tailwind splits into broken class
+ * names and which silently ate the background colour.
+ */
 export function SelectInput({
   className,
   ...props
 }: React.ComponentProps<"select">) {
   return (
-    <select
-      className={cn(
-        "h-11 w-full appearance-none border border-rule-firm bg-card px-3 pr-9 text-sm text-ink",
-        "bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 12 8%22 fill=%22none%22 stroke=%22%230c2333%22 stroke-width=%221.5%22><path d=%22M1 1.5 6 6.5 11 1.5%22/></svg>')]",
-        "bg-[length:12px_8px] bg-[right_0.85rem_center] bg-no-repeat",
-        "focus:border-cerulean focus:shadow-[inset_0_-2px_0_0_var(--cerulean)]",
-        className,
-      )}
-      {...props}
-    />
+    <div className="relative">
+      <select
+        className={cn(
+          "h-11 w-full appearance-none border border-rule-firm bg-card px-3 pr-9 text-sm text-ink",
+          "transition-shadow focus:border-cerulean focus:shadow-[inset_0_-2px_0_0_var(--cerulean)]",
+          "disabled:cursor-not-allowed disabled:bg-paper-deep disabled:text-ink-45",
+          className,
+        )}
+        {...props}
+      />
+      <svg
+        aria-hidden
+        viewBox="0 0 12 8"
+        className="pointer-events-none absolute right-3 top-1/2 h-2 w-3 -translate-y-1/2 text-ink-45"
+      >
+        <path
+          d="M1 1.5 6 6.5 11 1.5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
+      </svg>
+    </div>
   );
 }

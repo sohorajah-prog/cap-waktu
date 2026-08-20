@@ -44,7 +44,11 @@ export const FONT_COLORS = [
 ] as const;
 
 export type StampSettings = {
+  /** Keterangan bebas: nama gudang, patok, atau ruas jalan. */
   locationName: string;
+  /** Wilayah administratif terpilih, sudah dirangkai jadi satu baris. */
+  regionCode: string | null;
+  regionLabel: string;
   latitude: number | null;
   longitude: number | null;
   dateFormat: string;
@@ -58,6 +62,8 @@ export type StampSettings = {
 
 export const DEFAULT_SETTINGS: StampSettings = {
   locationName: "",
+  regionCode: null,
+  regionLabel: "",
   latitude: null,
   longitude: null,
   dateFormat: "DD/MM/YYYY HH:mm",
@@ -68,10 +74,14 @@ export const DEFAULT_SETTINGS: StampSettings = {
   showPlate: true,
 };
 
-/** The legend text, in reading order: place, then coordinates, then moment. */
+/**
+ * The legend text, narrowing outward-in: the specific spot, then the
+ * administrative region it sits in, then coordinates, then the moment.
+ */
 export function legendLines(settings: StampSettings, at: Date): string[] {
   const lines: string[] = [];
   if (settings.locationName.trim()) lines.push(settings.locationName.trim());
+  if (settings.regionLabel.trim()) lines.push(settings.regionLabel.trim());
   const coords = formatCoords(settings.latitude, settings.longitude);
   if (coords) lines.push(coords);
   lines.push(formatStamp(at, settings.dateFormat));
@@ -93,9 +103,33 @@ type DrawArgs = {
  * All metrics scale off image width so a 4000px photo and a 600px preview
  * produce visually identical output.
  */
+/**
+ * Breaks a line that is too wide onto further lines at word boundaries.
+ * A full "Kel./Desa …, Kec. …, Kabupaten …, Provinsi …" routinely runs past
+ * the edge of a portrait photo, and clipped evidence is worse than none.
+ */
+function wrap(ctx: CanvasRenderingContext2D, line: string, maxWidth: number): string[] {
+  if (ctx.measureText(line).width <= maxWidth) return [line];
+
+  const words = line.split(" ");
+  const out: string[] = [];
+  let current = "";
+  for (const word of words) {
+    const candidate = current ? current + " " + word : word;
+    if (current && ctx.measureText(candidate).width > maxWidth) {
+      out.push(current);
+      current = word;
+    } else {
+      current = candidate;
+    }
+  }
+  if (current) out.push(current);
+  return out;
+}
+
 export function drawLegend({ ctx, width, height, settings, at }: DrawArgs) {
-  const lines = legendLines(settings, at);
-  if (lines.length === 0) return;
+  const rawLines = legendLines(settings, at);
+  if (rawLines.length === 0) return;
 
   const scale = width / REFERENCE_WIDTH;
   const size = Math.max(8, settings.fontSize * scale);
@@ -109,6 +143,10 @@ export function drawLegend({ ctx, width, height, settings, at }: DrawArgs) {
   ctx.save();
   ctx.textBaseline = "top";
   ctx.font = `500 ${size}px ${stack}`;
+
+  // Side blocks get a narrower budget than edge bars, which may span the photo.
+  const budget = (isEdgeBar ? width : width * 0.82) - padX * 2;
+  const lines = rawLines.flatMap((line) => wrap(ctx, line, budget));
 
   const textWidth = Math.max(...lines.map((l) => ctx.measureText(l).width));
   const blockH = lines.length * lineHeight - (lineHeight - size) + padY * 2;

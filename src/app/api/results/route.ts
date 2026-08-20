@@ -91,6 +91,8 @@ export async function POST(request: Request) {
         .values({
           uploadId: upload.id,
           locationName: settings.locationName,
+          regionCode: settings.regionCode,
+          regionLabel: settings.regionLabel,
           latitude: settings.latitude,
           longitude: settings.longitude,
           dateFormat: settings.dateFormat,

@@ -14,6 +14,8 @@ const FORMATS = ["jpg", "png"] as const;
 
 export type ResultSettingsInput = {
   locationName: string;
+  regionCode: string | null;
+  regionLabel: string;
   latitude: string | null;
   longitude: string | null;
   dateFormat: string;
@@ -89,8 +91,19 @@ export function parseSettings(raw: unknown): ResultSettingsInput {
     throw new InvalidInput("Waktu cap tidak terbaca.");
   }
 
+  const regionCode = input.regionCode == null ? null : String(input.regionCode);
+  if (regionCode !== null && !/^[0-9]{2}(\.[0-9]{2}){0,2}(\.[0-9]{4})?$/.test(regionCode)) {
+    throw new InvalidInput("Kode wilayah tidak sah.");
+  }
+  const regionLabel = String(input.regionLabel ?? "").trim();
+  if (regionLabel.length > 250) {
+    throw new InvalidInput("Nama wilayah terlalu panjang.");
+  }
+
   return {
     locationName,
+    regionCode,
+    regionLabel,
     latitude: coordinate(input.latitude, "Lintang"),
     longitude: coordinate(input.longitude, "Bujur"),
     dateFormat,
@@ -122,6 +135,8 @@ export function toDTO({ results: result, uploads: upload }: JoinedRow): ResultDT
     originalUrl: `/api/uploads/${result.uploadId}/image`,
     settings: {
       locationName: result.locationName,
+      regionCode: result.regionCode,
+      regionLabel: result.regionLabel ?? "",
       latitude: result.latitude === null ? null : Number(result.latitude),
       longitude: result.longitude === null ? null : Number(result.longitude),
       dateFormat: result.dateFormat,

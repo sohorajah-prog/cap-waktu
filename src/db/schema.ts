@@ -26,7 +26,15 @@ export const results = sqliteTable(
     uploadId: integer("upload_id")
       .notNull()
       .references(() => uploads.id, { onDelete: "cascade" }),
+    /** Keterangan bebas dari pengguna, misalnya nama gudang atau patok. */
     locationName: text("location_name").notNull().default(""),
+    /**
+     * Kode wilayah terdalam yang dipilih, mis. "32.75.01.1001". Namanya
+     * disimpan sekali jadi (regionLabel) supaya legenda pada hasil lama tidak
+     * ikut berubah bila data wilayah diperbarui.
+     */
+    regionCode: text("region_code"),
+    regionLabel: text("region_label"),
     // Disimpan sebagai teks sesuai PRD: nilai GPS dipakai apa adanya dan boleh
     // kosong bila pengguna tidak memberikannya.
     latitude: text("latitude"),
@@ -54,6 +62,23 @@ export const results = sqliteTable(
       .default(sql`(unixepoch() * 1000)`),
   },
   (table) => [index("results_created_at_idx").on(table.createdAt)],
+);
+
+/**
+ * Wilayah administratif Indonesia (Permendagri), empat tingkat dalam satu
+ * tabel. Kode berjenjang dengan titik: 32 / 32.75 / 32.75.01 / 32.75.01.1001,
+ * sehingga induk selalu bisa diturunkan dari kodenya sendiri.
+ */
+export const regions = sqliteTable(
+  "regions",
+  {
+    code: text("code").primaryKey(),
+    parentCode: text("parent_code"),
+    /** 1 provinsi, 2 kabupaten/kota, 3 kecamatan, 4 kelurahan/desa. */
+    level: integer("level").notNull(),
+    name: text("name").notNull(),
+  },
+  (table) => [index("regions_parent_idx").on(table.parentCode, table.name)],
 );
 
 export const uploadsRelations = relations(uploads, ({ many }) => ({

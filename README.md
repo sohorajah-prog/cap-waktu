@@ -10,6 +10,7 @@ diunduh dan tercatat di riwayat.
 ## Fitur
 
 - Unggah foto dari galeri atau ambil langsung dari kamera
+- Pilihan wilayah bertingkat: provinsi, kabupaten/kota, kecamatan, kelurahan/desa
 - Koordinat otomatis dari GPS perangkat, atau diisi manual
 - Pengaturan legenda: format tanggal, posisi, jenis huruf, ukuran, warna
 - Pratinjau langsung yang persis sama dengan hasil unduhan
@@ -47,6 +48,22 @@ data/
 
 Lokasinya bisa dipindah lewat `CAP_WAKTU_DATA_DIR`.
 
+### Data wilayah
+
+`seed/wilayah.tsv` berisi 91.019 wilayah administratif (38 provinsi, 514
+kabupaten/kota, 7.265 kecamatan, 83.202 kelurahan/desa), diturunkan dari
+[cahyadsn/wilayah](https://github.com/cahyadsn/wilayah) yang mengacu pada data
+Kemendagri. Berkas ini dimuat otomatis ke tabel `regions` saat basis data
+pertama kali dibuat (91 ribu baris, sekitar 0,4 detik, sekali saja).
+
+Kode wilayah berjenjang memakai titik — `32` / `32.75` / `32.75.01` /
+`32.75.01.1001` — sehingga induk selalu bisa diturunkan dari kodenya sendiri.
+
+143 kelurahan dari sumber aslinya dibuang karena baris kecamatan induknya tidak
+ada, jadi tidak mungkin dijangkau lewat pilihan bertingkat. Menambalnya dengan
+nama karangan bukan pilihan: legenda cap waktu dipakai sebagai bukti. Untuk
+wilayah tersebut, kolom **Detail tempat** tetap bisa diisi bebas.
+
 ### Perintah lain
 
 ```bash
@@ -67,6 +84,7 @@ npx drizzle-kit generate # migrasi baru setelah skema berubah
 | `DELETE` | `/api/results/:id` | Hapus hasil beserta berkasnya |
 | `GET` | `/api/results/:id/image` | Berkas gambar hasil |
 | `GET` | `/api/uploads/:id/image` | Berkas gambar asli |
+| `GET` | `/api/wilayah?parent=` | Daftar wilayah satu tingkat di bawah kode induk |
 
 ## Catatan penerapan
 

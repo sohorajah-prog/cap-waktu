@@ -25,7 +25,54 @@ function create() {
   if (fs.existsSync(MIGRATIONS_DIR)) {
     migrate(db, { migrationsFolder: MIGRATIONS_DIR });
   }
+  seedRegions(sqlite);
   return db;
+}
+
+const SEED_FILE = path.join(process.cwd(), "seed", "wilayah.tsv");
+
+/**
+ * Fills the regions table from the bundled Permendagri list on first run.
+ * 91k rows insert in about a second inside one transaction, and every later
+ * start finds the table populated and returns immediately.
+ */
+function seedRegions(sqlite: Database.Database) {
+  const count = sqlite.prepare("SELECT COUNT(*) AS n FROM regions").get() as {
+    n: number;
+  };
+  if (count.n > 0) return;
+
+  if (!fs.existsSync(SEED_FILE)) {
+    console.warn(
+      `[cap-waktu] seed/wilayah.tsv tidak ditemukan — daftar wilayah akan kosong.`,
+    );
+    return;
+  }
+
+  const insert = sqlite.prepare(
+    "INSERT OR IGNORE INTO regions (code, parent_code, level, name) VALUES (?, ?, ?, ?)",
+  );
+  const load = sqlite.transaction((lines: string[]) => {
+    for (const line of lines) {
+      if (!line) continue;
+      const tab = line.indexOf("\t");
+      if (tab < 0) continue;
+      const code = line.slice(0, tab);
+      const name = line.slice(tab + 1);
+      const parts = code.split(".");
+      const parent = parts.length > 1 ? parts.slice(0, -1).join(".") : null;
+      insert.run(code, parent, parts.length, name);
+    }
+  });
+
+  const started = Date.now();
+  load(fs.readFileSync(SEED_FILE, "utf8").split("\n"));
+  const seeded = sqlite.prepare("SELECT COUNT(*) AS n FROM regions").get() as {
+    n: number;
+  };
+  console.log(
+    `[cap-waktu] ${seeded.n.toLocaleString("id-ID")} wilayah dimuat dalam ${Date.now() - started} ms`,
+  );
 }
 
 // Next reloads modules on every edit in dev; without this the process would
