@@ -11,9 +11,11 @@ diunduh dan tercatat di riwayat.
 
 - Unggah foto dari galeri atau ambil langsung dari kamera
 - Koordinat otomatis dari GPS perangkat, atau diisi manual
-- Wilayah terisi otomatis dari koordinat, atau dipilih sendiri lewat empat
-  dropdown bertingkat (provinsi, kabupaten/kota, kecamatan, kelurahan/desa)
-- Pengaturan legenda: format tanggal, posisi, jenis huruf, ukuran, warna
+- Wilayah administratif terisi otomatis dari koordinat, dari provinsi sampai
+  kelurahan/desa
+- Format tanggal sampai menit atau sampai detik, dengan zona waktu
+  (WIB/WITA/WIT) yang mengikuti perangkat
+- Pengaturan legenda: posisi, jenis huruf, ukuran, warna
 - Pratinjau langsung yang persis sama dengan hasil unduhan
 - Unduh JPG atau PNG, otomatis tersimpan ke Riwayat Hasil
 - Riwayat berbentuk lembar kontak, lengkap dengan detail pengaturan tiap hasil
@@ -109,8 +111,14 @@ dan kecamatan sering kosong. Pencocokannya karena itu berjalan bertahap:
   bila masih ragu.
 
 Yang tidak bisa dipastikan **dibiarkan kosong**, bukan ditebak — legenda cap
-waktu dipakai sebagai bukti. Hasilnya juga selalu bisa ditimpa manual lewat
-keempat dropdown.
+waktu dipakai sebagai bukti. Hasilnya ditampilkan sebagai teks yang tidak bisa
+disunting, supaya pengguna tetap melihat persis apa yang akan tercetak.
+
+Tidak ada pilihan wilayah manual di formulir: bila koordinatnya tidak
+menghasilkan wilayah — sekitar sepertiga titik uji hanya terisi sampai provinsi
+— baris wilayah pada legenda ikut kosong, dan keterangan lokasi hanya bisa
+disampaikan lewat kolom **Detail tempat**. Endpoint `/api/wilayah` masih
+tersedia bila pemilihan bertingkat ingin dihidupkan kembali.
 
 Cakupannya tidak merata. Dari sembilan titik uji, enam terisi keempat
 tingkatnya (Bekasi, Bandung, Jakarta, Yogyakarta, Medan, Surabaya), satu

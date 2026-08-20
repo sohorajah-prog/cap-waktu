@@ -14,9 +14,13 @@ import { Button } from "@/components/ui/button";
 import { Field, SegmentedControl, SelectInput, TextInput } from "@/components/ui/field";
 import { PreviewFrame } from "@/components/preview-frame";
 import { StepHeading } from "@/components/step-heading";
-import { WilayahPicker } from "@/components/wilayah-picker";
 import { useNow } from "@/components/live-clock";
-import { DATE_FORMATS, formatCoords, formatStamp } from "@/lib/format";
+import {
+  DATE_FORMAT_GROUPS,
+  formatCoords,
+  formatStamp,
+  SAMPLE_DATE,
+} from "@/lib/format";
 import { readJson } from "@/lib/api";
 import { saveResult } from "@/lib/history";
 import { LEVELS, type Region } from "@/lib/wilayah";
@@ -47,7 +51,6 @@ export function StampStudio() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState("");
   const [saveError, setSaveError] = useState("");
-  const [preset, setPreset] = useState<Region[] | null>(null);
   const [lookup, setLookup] = useState<LookupState>("idle");
   const [lookupNote, setLookupNote] = useState("");
 
@@ -128,7 +131,6 @@ export function StampStudio() {
     patch({ latitude: null, longitude: null, regionCode: null, regionLabel: "" });
     setGps("idle");
     setGpsMessage("");
-    setPreset(null);
     setLookup("idle");
     setLookupNote("");
   };
@@ -155,7 +157,6 @@ export function StampStudio() {
         return;
       }
 
-      setPreset(data.regions);
       patch({
         regionCode: data.regions[data.regions.length - 1].code,
         regionLabel: data.label,
@@ -458,30 +459,49 @@ export function StampStudio() {
               />
             </Field>
 
-            {lookup !== "idle" ? (
-              <p
-                role="status"
-                className={cn(
-                  "border-l-2 px-3 py-2 text-[0.8rem] leading-relaxed",
-                  lookup === "ready" && "border-citrus-deep bg-citrus-wash text-ink",
-                  lookup === "partial" && "border-cerulean bg-cerulean-wash text-ink",
-                  (lookup === "error" || lookup === "empty") &&
-                    "border-magenta bg-magenta-wash text-ink",
-                  lookup === "loading" && "border-rule-firm text-ink-70",
-                )}
-              >
-                {lookup === "loading" ? "Mencari wilayah dari koordinat…" : lookupNote}
-              </p>
-            ) : null}
+            {/* Read-only: the region comes from the coordinates, but the user
+                still has to see exactly what the stamp will carry. */}
+            <div className="border border-rule-firm bg-card">
+              <div className="flex items-center gap-2 border-b border-rule px-3 py-2.5">
+                <span
+                  aria-hidden
+                  className={cn(
+                    "h-1.5 w-1.5 rounded-full",
+                    lookup === "loading" && "animate-live bg-cerulean",
+                    lookup === "ready" && "bg-citrus-deep",
+                    lookup === "partial" && "bg-cerulean",
+                    (lookup === "error" || lookup === "empty") && "bg-magenta",
+                    lookup === "idle" && "bg-ink-45",
+                  )}
+                />
+                <span className="label-eyebrow text-ink-70">Wilayah administratif</span>
+              </div>
 
-            <WilayahPicker
-              preset={preset}
-              onChange={({ code, label }) => {
-                setPreset(null);
-                setLookup("idle");
-                patch({ regionCode: code, regionLabel: label });
-              }}
-            />
+              <p className="px-3 py-3 text-[0.82rem] leading-relaxed text-ink">
+                {settings.regionLabel || (
+                  <span className="text-ink-45">
+                    Belum terisi. Ambil koordinat, lalu tekan “Isi wilayah dari
+                    koordinat”.
+                  </span>
+                )}
+              </p>
+
+              {lookup !== "idle" ? (
+                <p
+                  role="status"
+                  className={cn(
+                    "border-t px-3 py-2 text-[0.76rem] leading-relaxed",
+                    lookup === "ready" && "border-rule bg-citrus-wash text-ink",
+                    lookup === "partial" && "border-rule bg-cerulean-wash text-ink",
+                    (lookup === "error" || lookup === "empty") &&
+                      "border-rule bg-magenta-wash text-ink",
+                    lookup === "loading" && "border-rule text-ink-70",
+                  )}
+                >
+                  {lookup === "loading" ? "Mencari wilayah dari koordinat…" : lookupNote}
+                </p>
+              ) : null}
+            </div>
           </div>
         </section>
 
@@ -494,10 +514,16 @@ export function StampStudio() {
                 value={settings.dateFormat}
                 onChange={(e) => patch({ dateFormat: e.target.value })}
               >
-                {DATE_FORMATS.map((f) => (
-                  <option key={f.value} value={f.value}>
-                    {f.label}
-                  </option>
+                {DATE_FORMAT_GROUPS.map((group) => (
+                  <optgroup key={group.label} label={group.label}>
+                    {group.formats.map((pattern) => (
+                      <option key={pattern} value={pattern}>
+                        {/* The option previews itself, so it can never drift
+                            from what the format actually renders. */}
+                        {formatStamp(at ?? SAMPLE_DATE, pattern)}
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
               </SelectInput>
             </Field>
