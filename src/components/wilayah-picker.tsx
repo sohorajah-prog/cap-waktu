@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Field, SelectInput } from "@/components/ui/field";
 import { readJson } from "@/lib/api";
 import { LEVELS, regionLabel, type Region } from "@/lib/wilayah";
@@ -25,14 +25,18 @@ export type WilayahSelection = {
 };
 
 export function WilayahPicker({
+  preset,
   onChange,
 }: {
+  /** Chain to display, e.g. the result of a coordinate lookup. */
+  preset?: Region[] | null;
   onChange: (selection: WilayahSelection) => void;
 }) {
   const [options, setOptions] = useState<Region[][]>([[], [], [], []]);
   const [chosen, setChosen] = useState<(Region | null)[]>([null, null, null, null]);
   const [loading, setLoading] = useState<number | null>(0);
   const [error, setError] = useState("");
+  const applied = useRef<Region[] | null>(null);
 
   const loadInto = useCallback(async (index: number, parent: string | null) => {
     setLoading(index);
@@ -71,6 +75,32 @@ export function WilayahPicker({
     };
   }, []);
 
+  // A lookup result fills the selects and pulls in the sibling lists, so the
+  // user can still change any level afterwards.
+  useEffect(() => {
+    if (!preset || preset === applied.current) return;
+    applied.current = preset;
+
+    let cancelled = false;
+    const next: (Region | null)[] = [null, null, null, null];
+    for (const region of preset) next[region.level - 1] = region;
+
+    Promise.all(
+      [null, ...preset.slice(0, 3).map((r) => r.code)].map((parent) =>
+        fetchRegions(parent).catch(() => [] as Region[]),
+      ),
+    ).then((lists) => {
+      if (cancelled) return;
+      setOptions([lists[0] ?? [], lists[1] ?? [], lists[2] ?? [], lists[3] ?? []]);
+      setChosen(next);
+      setLoading(null);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [preset]);
+
   const pick = (index: number, code: string) => {
     const region = options[index].find((r) => r.code === code) ?? null;
 
@@ -80,6 +110,7 @@ export function WilayahPicker({
     );
     setChosen(nextChosen);
     setOptions((prev) => prev.map((o, i) => (i > index ? [] : o)));
+    applied.current = null;
 
     if (region && index < 3) void loadInto(index + 1, region.code);
 

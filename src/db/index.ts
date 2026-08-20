@@ -58,7 +58,9 @@ function seedRegions(sqlite: Database.Database) {
       const tab = line.indexOf("\t");
       if (tab < 0) continue;
       const code = line.slice(0, tab);
-      const name = line.slice(tab + 1);
+      // A handful of source rows carry a trailing space; it would otherwise
+      // show up in dropdowns and break name matching.
+      const name = line.slice(tab + 1).trim();
       const parts = code.split(".");
       const parent = parts.length > 1 ? parts.slice(0, -1).join(".") : null;
       insert.run(code, parent, parts.length, name);

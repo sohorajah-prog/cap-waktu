@@ -6,6 +6,7 @@ import {
   Crosshair,
   Download,
   ImagePlus,
+  MapPin,
   RotateCcw,
   Trash2,
 } from "lucide-react";
@@ -16,7 +17,9 @@ import { StepHeading } from "@/components/step-heading";
 import { WilayahPicker } from "@/components/wilayah-picker";
 import { useNow } from "@/components/live-clock";
 import { DATE_FORMATS, formatCoords, formatStamp } from "@/lib/format";
+import { readJson } from "@/lib/api";
 import { saveResult } from "@/lib/history";
+import { LEVELS, type Region } from "@/lib/wilayah";
 import {
   canvasToBlob,
   DEFAULT_SETTINGS,
@@ -29,6 +32,7 @@ import {
 import { cn } from "@/lib/utils";
 
 type GpsState = "idle" | "loading" | "ready" | "error";
+type LookupState = "idle" | "loading" | "ready" | "partial" | "empty" | "error";
 
 export function StampStudio() {
   const [settings, setSettings] = useState<StampSettings>(DEFAULT_SETTINGS);
@@ -43,6 +47,9 @@ export function StampStudio() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState("");
   const [saveError, setSaveError] = useState("");
+  const [preset, setPreset] = useState<Region[] | null>(null);
+  const [lookup, setLookup] = useState<LookupState>("idle");
+  const [lookupNote, setLookupNote] = useState("");
 
   const galleryRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
@@ -118,9 +125,53 @@ export function StampStudio() {
   };
 
   const clearCoords = () => {
-    patch({ latitude: null, longitude: null });
+    patch({ latitude: null, longitude: null, regionCode: null, regionLabel: "" });
     setGps("idle");
     setGpsMessage("");
+    setPreset(null);
+    setLookup("idle");
+    setLookupNote("");
+  };
+
+  /**
+   * Turns coordinates into an administrative region. The coordinates leave the
+   * device for this, which is why it is a button rather than something that
+   * fires on its own.
+   */
+  const findRegion = async (lat: number, lon: number) => {
+    setLookup("loading");
+    setLookupNote("");
+    try {
+      const data = await readJson<{
+        regions: Region[];
+        label: string;
+        unmatched: string[];
+        note?: string;
+      }>(await fetch(`/api/wilayah/lookup?lat=${lat}&lon=${lon}`));
+
+      if (!data.regions.length) {
+        setLookup("empty");
+        setLookupNote(data.note ?? "Wilayah tidak ditemukan. Pilih secara manual.");
+        return;
+      }
+
+      setPreset(data.regions);
+      patch({
+        regionCode: data.regions[data.regions.length - 1].code,
+        regionLabel: data.label,
+      });
+      setLookup(data.regions.length === 4 ? "ready" : "partial");
+      setLookupNote(
+        data.regions.length === 4
+          ? "Semua tingkat terisi. Periksa sebelum mengunduh."
+          : `Terisi sampai ${LEVELS[data.regions.length - 1].label.toLowerCase()}. Lengkapi sisanya sendiri.`,
+      );
+    } catch (error) {
+      setLookup("error");
+      setLookupNote(
+        error instanceof Error ? error.message : "Pencarian wilayah gagal.",
+      );
+    }
   };
 
   const download = async () => {
@@ -288,28 +339,7 @@ export function StampStudio() {
         </section>
 
         <section>
-          <StepHeading step="02" title="Lokasi" />
-          <div className="space-y-4">
-            <Field label="Detail tempat" htmlFor="lokasi" hint="baris pertama legenda">
-              <TextInput
-                id="lokasi"
-                value={settings.locationName}
-                onChange={(e) => patch({ locationName: e.target.value })}
-                placeholder="Gudang B, Jl. Raya Bekasi KM 24"
-                maxLength={90}
-              />
-            </Field>
-
-            <WilayahPicker
-              onChange={({ code, label }) =>
-                patch({ regionCode: code, regionLabel: label })
-              }
-            />
-          </div>
-        </section>
-
-        <section>
-          <StepHeading step="03" title="Koordinat" />
+          <StepHeading step="02" title="Koordinat" />
           <div className="space-y-4">
             <div className="border border-rule-firm bg-card">
               <div className="flex items-center gap-2 border-b border-rule px-3 py-2.5">
@@ -382,6 +412,26 @@ export function StampStudio() {
                   Kosongkan
                 </Button>
               </div>
+
+              <div className="border-t border-rule p-3">
+                <Button
+                  size="sm"
+                  onClick={() => void findRegion(settings.latitude!, settings.longitude!)}
+                  disabled={
+                    settings.latitude === null ||
+                    settings.longitude === null ||
+                    lookup === "loading"
+                  }
+                  className="w-full"
+                >
+                  <MapPin size={14} strokeWidth={2.2} />
+                  {lookup === "loading" ? "Mencari…" : "Isi wilayah dari koordinat"}
+                </Button>
+                <p className="mt-2 text-[0.72rem] leading-relaxed text-ink-45">
+                  Koordinat dikirim ke layanan peta OpenStreetMap untuk dicocokkan.
+                  Fotonya sendiri tidak ikut.
+                </p>
+              </div>
             </div>
 
             {gps === "error" && gpsMessage ? (
@@ -392,6 +442,46 @@ export function StampStudio() {
                 {gpsMessage}
               </p>
             ) : null}
+          </div>
+        </section>
+
+        <section>
+          <StepHeading step="03" title="Lokasi" />
+          <div className="space-y-4">
+            <Field label="Detail tempat" htmlFor="lokasi" hint="baris pertama legenda">
+              <TextInput
+                id="lokasi"
+                value={settings.locationName}
+                onChange={(e) => patch({ locationName: e.target.value })}
+                placeholder="Gudang B, Jl. Raya Bekasi KM 24"
+                maxLength={90}
+              />
+            </Field>
+
+            {lookup !== "idle" ? (
+              <p
+                role="status"
+                className={cn(
+                  "border-l-2 px-3 py-2 text-[0.8rem] leading-relaxed",
+                  lookup === "ready" && "border-citrus-deep bg-citrus-wash text-ink",
+                  lookup === "partial" && "border-cerulean bg-cerulean-wash text-ink",
+                  (lookup === "error" || lookup === "empty") &&
+                    "border-magenta bg-magenta-wash text-ink",
+                  lookup === "loading" && "border-rule-firm text-ink-70",
+                )}
+              >
+                {lookup === "loading" ? "Mencari wilayah dari koordinat…" : lookupNote}
+              </p>
+            ) : null}
+
+            <WilayahPicker
+              preset={preset}
+              onChange={({ code, label }) => {
+                setPreset(null);
+                setLookup("idle");
+                patch({ regionCode: code, regionLabel: label });
+              }}
+            />
           </div>
         </section>
 

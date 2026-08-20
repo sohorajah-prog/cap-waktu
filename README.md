@@ -10,8 +10,9 @@ diunduh dan tercatat di riwayat.
 ## Fitur
 
 - Unggah foto dari galeri atau ambil langsung dari kamera
-- Pilihan wilayah bertingkat: provinsi, kabupaten/kota, kecamatan, kelurahan/desa
 - Koordinat otomatis dari GPS perangkat, atau diisi manual
+- Wilayah terisi otomatis dari koordinat, atau dipilih sendiri lewat empat
+  dropdown bertingkat (provinsi, kabupaten/kota, kecamatan, kelurahan/desa)
 - Pengaturan legenda: format tanggal, posisi, jenis huruf, ukuran, warna
 - Pratinjau langsung yang persis sama dengan hasil unduhan
 - Unduh JPG atau PNG, otomatis tersimpan ke Riwayat Hasil
@@ -85,6 +86,41 @@ npx drizzle-kit generate # migrasi baru setelah skema berubah
 | `GET` | `/api/results/:id/image` | Berkas gambar hasil |
 | `GET` | `/api/uploads/:id/image` | Berkas gambar asli |
 | `GET` | `/api/wilayah?parent=` | Daftar wilayah satu tingkat di bawah kode induk |
+| `GET` | `/api/wilayah/lookup?lat=&lon=` | Menebak wilayah dari koordinat (reverse geocoding) |
+
+### Pengisian wilayah dari koordinat
+
+Tombol **Isi wilayah dari koordinat** mengirim lintang/bujur ke
+[Nominatim](https://nominatim.openstreetmap.org) (OpenStreetMap) lewat server
+ini — bukan langsung dari peramban, sehingga alamat pengguna tidak ikut
+terkirim. Fotonya tidak pernah dikirim ke mana pun.
+
+Nama yang dikembalikan Nominatim tidak selalu sama dengan ejaan Permendagri,
+dan kecamatan sering kosong. Pencocokannya karena itu berjalan bertahap:
+
+- Nama dinormalkan (huruf kecil, imbuhan "Kabupaten"/"Kota Administrasi"/dsb.
+  dibuang) lalu dicocokkan menurun dari provinsi ke kelurahan.
+- Bila **kecamatan kosong**, kelurahan dicari di seluruh kabupaten; satu
+  kecocokan unik mengembalikan kecamatannya lewat kode induknya.
+- Bila **provinsi kosong**, kabupaten dicari nasional; kecocokan unik
+  mengembalikan provinsinya.
+- Ambiguitas "Kota X" lawan "Kabupaten X" dipecahkan oleh medan asal Nominatim
+  (`city` menandakan kota, `county` menandakan kabupaten), lalu oleh kelurahan
+  bila masih ragu.
+
+Yang tidak bisa dipastikan **dibiarkan kosong**, bukan ditebak — legenda cap
+waktu dipakai sebagai bukti. Hasilnya juga selalu bisa ditimpa manual lewat
+keempat dropdown.
+
+Cakupannya tidak merata. Dari sembilan titik uji, enam terisi keempat
+tingkatnya (Bekasi, Bandung, Jakarta, Yogyakarta, Medan, Surabaya), satu
+sampai kecamatan (Makassar), dan dua hanya sampai provinsi — termasuk satu
+titik di pedalaman Sulawesi yang memang tidak punya data desa di OSM.
+
+Kebijakan pemakaian Nominatim membatasi satu permintaan per detik, jadi server
+menahan antrean dan menyimpan hasil selama 24 jam pada ketelitian ~11 m. Untuk
+lalu lintas nyata, gunakan instans Nominatim sendiri atau penyedia berbayar,
+dan setel `CAP_WAKTU_GEOCODER_UA` ke kontak Anda.
 
 ## Catatan penerapan
 
