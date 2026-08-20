@@ -64,6 +64,14 @@ pertama kali dibuat (91 ribu baris, sekitar 0,4 detik, sekali saja).
 Kode wilayah berjenjang memakai titik — `32` / `32.75` / `32.75.01` /
 `32.75.01.1001` — sehingga induk selalu bisa diturunkan dari kodenya sendiri.
 
+Segmen keempat juga menandai jenisnya: `1xxx` kelurahan, `2xxx` desa. Legenda
+karena itu menulis **Kel.** atau **Desa**, bukan keduanya. Penanda ini dibaca
+dari kode, bukan dari status kota/kabupaten induknya — Kota Denpasar, misalnya,
+memuat desa. Awalan dilewati untuk nama yang sudah menyebut jenisnya sendiri:
+Gampong (Aceh), Nagari (Sumbar), Pekon (Lampung), dan 14 Desa Adat di Kabupaten
+Jayapura yang berkode `3xxx`. "Kampung" sengaja tidak termasuk, karena di
+Sumatera, Bali, dan Maluku itu bagian dari nama — "Desa Kampung Sawah" benar.
+
 143 kelurahan dari sumber aslinya dibuang karena baris kecamatan induknya tidak
 ada, jadi tidak mungkin dijangkau lewat pilihan bertingkat. Menambalnya dengan
 nama karangan bukan pilihan: legenda cap waktu dipakai sebagai bukti. Untuk

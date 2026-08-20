@@ -99,13 +99,8 @@ type DrawArgs = {
 };
 
 /**
- * Paints the legend onto an already-drawn image.
- * All metrics scale off image width so a 4000px photo and a 600px preview
- * produce visually identical output.
- */
-/**
  * Breaks a line that is too wide onto further lines at word boundaries.
- * A full "Kel./Desa …, Kec. …, Kabupaten …, Provinsi …" routinely runs past
+ * A full "Desa …, Kec. …, Kabupaten …, Provinsi …" routinely runs past
  * the edge of a portrait photo, and clipped evidence is worse than none.
  */
 function wrap(ctx: CanvasRenderingContext2D, line: string, maxWidth: number): string[] {
@@ -127,6 +122,11 @@ function wrap(ctx: CanvasRenderingContext2D, line: string, maxWidth: number): st
   return out;
 }
 
+/**
+ * Paints the legend onto an already-drawn image.
+ * All metrics scale off image width so a 4000px photo and a 600px preview
+ * produce visually identical output.
+ */
 export function drawLegend({ ctx, width, height, settings, at }: DrawArgs) {
   const rawLines = legendLines(settings, at);
   if (rawLines.length === 0) return;
