@@ -108,7 +108,7 @@ type DrawArgs = {
 
 /**
  * Breaks a line that is too wide onto further lines at word boundaries.
- * A full "Desa …, Kec. …, Kabupaten …, Provinsi …" routinely runs past
+ * A line such as "Kecamatan …" or a long detail note routinely runs past
  * the edge of a portrait photo, and clipped evidence is worse than none.
  */
 function wrap(ctx: CanvasRenderingContext2D, line: string, maxWidth: number): string[] {

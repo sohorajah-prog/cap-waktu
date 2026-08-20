@@ -110,7 +110,7 @@ setingkat dari kelurahan sampai provinsi:
 6.241586° LS  106.995400° BT     titik koordinat
 Gudang B, Jl. Raya Bekasi KM 24  detail tempat
 Kel. Margajaya                   kelurahan/desa
-Kec. Bekasi Selatan              kecamatan
+Kecamatan Bekasi Selatan         kecamatan
 Kota Bekasi                      kabupaten/kota
 Jawa Barat                       provinsi
 ```

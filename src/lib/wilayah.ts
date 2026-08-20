@@ -35,7 +35,7 @@ function villageWord(code: string): string {
 
 /** Prefixes the source data leaves off, so a stamp reads unambiguously. */
 function decorate(region: Region): string {
-  if (region.level === 3) return "Kec. " + region.name;
+  if (region.level === 3) return "Kecamatan " + region.name;
   if (region.level === 4) {
     if (SELF_DESCRIBING.test(region.name)) return region.name;
     return villageWord(region.code) + region.name;
