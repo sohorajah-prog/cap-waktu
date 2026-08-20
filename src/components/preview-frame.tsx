@@ -1,8 +1,13 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { drawLegend, fontsReady, legendLines, type StampSettings } from "@/lib/stamp";
-import { formatStamp } from "@/lib/format";
+import {
+  drawLegend,
+  fontsReady,
+  legendParts,
+  type LegendParts,
+  type StampSettings,
+} from "@/lib/stamp";
 import { cn } from "@/lib/utils";
 
 const PREVIEW_MAX = 1600;
@@ -103,7 +108,7 @@ function Ticks() {
  * runs, and the legend already sits where it will print.
  */
 function EmptyStage({ settings, at }: { settings: StampSettings; at: Date | null }) {
-  const lines = at ? legendLines(settings, at) : [];
+  const parts = at ? legendParts(settings, at) : null;
   const pos = settings.legendPosition;
   const onTop = pos === "atas";
 
@@ -114,54 +119,76 @@ function EmptyStage({ settings, at }: { settings: StampSettings; at: Date | null
         className="absolute inset-0 opacity-[0.12] [background-image:linear-gradient(to_right,var(--citrus)_1px,transparent_1px),linear-gradient(to_bottom,var(--citrus)_1px,transparent_1px)] [background-size:44px_44px]"
       />
 
-      {onTop ? <MockLegend lines={lines} position={pos} /> : null}
+      {onTop ? <MockLegend parts={parts} position={pos} /> : null}
 
       <div className="relative my-auto">
-        <p className="label-eyebrow mb-3 text-citrus/70">Belum ada gambar</p>
-        <p className="tnum font-mono text-[clamp(2rem,7vw,4.4rem)] font-bold leading-[0.95] text-citrus">
-          {at ? formatStamp(at, "HH:mm:ss") : "--:--:--"}
-        </p>
-        <p className="mt-2 font-mono text-[0.68rem] tracking-[0.14em] text-white/45">
-          {at ? formatStamp(at, "DDD, DD MMMM YYYY") : ""}
-        </p>
+        <p className="label-eyebrow text-citrus/70">Belum ada gambar</p>
       </div>
 
-      {onTop ? null : <MockLegend lines={lines} position={pos} />}
+      {onTop ? null : <MockLegend parts={parts} position={pos} />}
     </div>
   );
 }
 
+/** A rough stand-in for the canvas legend, in the same arrangement. */
 function MockLegend({
-  lines,
+  parts,
   position,
 }: {
-  lines: string[];
+  parts: LegendParts | null;
   position: StampSettings["legendPosition"];
 }) {
-  const edgeBar = position === "atas" || position === "bawah";
+  const band = position === "atas" || position === "bawah";
+  const alignRight = position === "kanan";
+
   return (
     <div
       className={cn(
         "relative flex transition-all duration-300 ease-out",
         position === "kiri" && "justify-start",
-        position === "kanan" && "justify-end",
+        alignRight && "justify-end",
       )}
     >
-      <div className={cn(edgeBar ? "w-full" : "max-w-[78%]")}>
-        <div className="h-[3px] w-full bg-citrus" />
-        <div className="bg-black/45 px-3 py-2.5">
-          {(lines.length ? lines : ["Nama lokasi akan tampil di sini"]).map((line, i) => (
-            <p
-              key={i}
-              className={cn(
-                "tnum font-mono text-[0.64rem] leading-relaxed text-white/80",
-                position === "kanan" && "text-right",
-              )}
-            >
-              {line}
-            </p>
-          ))}
+      <div
+        className={cn(
+          "px-1 text-white",
+          band ? "w-full" : "max-w-[86%]",
+          alignRight && "text-right",
+        )}
+        style={{ textShadow: "0 1px 4px rgba(0,0,0,.8)" }}
+      >
+        <div
+          className={cn(
+            "flex items-center gap-2.5",
+            alignRight && "flex-row-reverse",
+          )}
+        >
+          <span className="tnum font-mono text-[clamp(1.5rem,5vw,2.6rem)] font-bold leading-none">
+            {parts ? parts.time : "--:--"}
+          </span>
+          <span aria-hidden className="h-9 w-[3px] shrink-0 bg-citrus" />
+          <span className="leading-tight">
+            <span className="block font-mono text-[0.7rem]">
+              {parts ? parts.date : ""}
+            </span>
+            <span className="block font-mono text-[0.7rem] text-white/75">
+              {parts ? parts.day : ""}
+            </span>
+          </span>
         </div>
+
+        <p className="mt-2 font-mono text-[0.66rem] leading-relaxed text-white/85">
+          {parts?.address || "Alamat akan tampil di sini"}
+        </p>
+
+        {parts?.coords ? (
+          <>
+            <span aria-hidden className="mt-2 block h-px w-full bg-white/35" />
+            <p className="tnum mt-1.5 font-mono text-[0.6rem] text-white/70">
+              {parts.coords}
+            </p>
+          </>
+        ) : null}
       </div>
     </div>
   );

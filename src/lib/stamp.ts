@@ -1,4 +1,4 @@
-import { formatCoords, formatStamp } from "./format";
+import { findFormat, formatCoords, formatStamp } from "./format";
 
 export const LEGEND_POSITIONS = [
   { value: "bawah", label: "Bawah" },
@@ -9,6 +9,24 @@ export const LEGEND_POSITIONS = [
 export type LegendPosition = (typeof LEGEND_POSITIONS)[number]["value"];
 
 export const FONT_FAMILIES = [
+  {
+    value: "android",
+    label: "Android (Roboto)",
+    cssVar: "--font-roboto",
+    fallback: "Roboto, 'Helvetica Neue', Arial, sans-serif",
+  },
+  {
+    /**
+     * Apple does not license SF Pro for embedding, so this renders as the real
+     * thing on Apple devices and falls back to Helvetica elsewhere.
+     */
+    value: "ios",
+    label: "iOS (SF Pro)",
+    cssVar: "",
+    fallback:
+      "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', " +
+      "'Helvetica Neue', Helvetica, Arial, sans-serif",
+  },
   { value: "sans", label: "Sans", cssVar: "--font-public-sans", fallback: "Arial, sans-serif" },
   { value: "mono", label: "Mono", cssVar: "--font-martian-mono", fallback: "ui-monospace, monospace" },
   { value: "serif", label: "Serif", cssVar: "", fallback: "Georgia, 'Times New Roman', serif" },
@@ -69,31 +87,43 @@ export const DEFAULT_SETTINGS: StampSettings = {
   regionLines: [],
   latitude: null,
   longitude: null,
-  dateFormat: "DD/MM/YYYY HH:mm",
+  dateFormat: "DD MMMM YYYY, HH:mm",
   legendPosition: "bawah",
   fontSize: 26,
   fontColor: "#ffffff",
-  fontFamily: "sans",
-  showPlate: true,
+  fontFamily: "android",
+  showPlate: false,
+};
+
+export type LegendParts = {
+  /** The large clock. */
+  time: string;
+  date: string;
+  day: string;
+  /** Detail and region running together as one flowing address. */
+  address: string;
+  coords: string;
 };
 
 /**
- * The legend text: when, then where on the globe, then where by name —
- * widening one administrative step per line from the village up to the
- * province. The free-text detail sits with the place names, ahead of the
- * village, because it is the most specific of them.
+ * The legend's content, split by the role each piece plays in the layout
+ * rather than by one line each: the clock stands alone, the date and weekday
+ * sit beside it, and every place name runs together as an address.
  */
-export function legendLines(settings: StampSettings, at: Date): string[] {
-  const lines: string[] = [formatStamp(at, settings.dateFormat)];
+export function legendParts(settings: StampSettings, at: Date): LegendParts {
+  const format = findFormat(settings.dateFormat);
+  const address = [settings.locationName.trim(), ...settings.regionLines]
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join(", ");
 
-  const coords = formatCoords(settings.latitude, settings.longitude);
-  if (coords) lines.push(coords);
-
-  if (settings.locationName.trim()) lines.push(settings.locationName.trim());
-  for (const part of settings.regionLines) {
-    if (part.trim()) lines.push(part.trim());
-  }
-  return lines;
+  return {
+    time: formatStamp(at, format.time),
+    date: formatStamp(at, format.date),
+    day: formatStamp(at, "DDDD"),
+    address,
+    coords: formatCoords(settings.latitude, settings.longitude),
+  };
 }
 
 const REFERENCE_WIDTH = 1080;
@@ -130,78 +160,187 @@ function wrap(ctx: CanvasRenderingContext2D, line: string, maxWidth: number): st
   return out;
 }
 
+/** Every measurement below is a multiple of the body size, so the whole block
+ *  scales together with the size slider and with the photo's resolution. */
+function metricsFor(body: number) {
+  return {
+    body,
+    clock: body * 2.6,
+    meta: body * 0.92,
+    foot: body * 0.86,
+    padX: body * 1.15,
+    padY: body * 1.0,
+    /** Gap on each side of the gold divider. */
+    dividerGap: body * 0.62,
+    dividerWidth: Math.max(2, body * 0.14),
+    metaLine: body * 1.28,
+    bodyLine: body * 1.32,
+    footLine: body * 1.3,
+    gapHeadToAddress: body * 0.85,
+    gapAddressToRule: body * 0.8,
+    gapRuleToFoot: body * 0.62,
+    hairline: Math.max(1, body * 0.045),
+  };
+}
+
+const weight = {
+  clock: 700,
+  meta: 500,
+  body: 500,
+  foot: 500,
+} as const;
+
 /**
- * Paints the legend onto an already-drawn image.
+ * Paints the legend onto an already-drawn image, in the arrangement of the
+ * reference: a large clock, a gold divider, the date and weekday stacked
+ * beside it, the address running underneath, then a hairline and the
+ * coordinates.
+ *
  * All metrics scale off image width so a 4000px photo and a 600px preview
  * produce visually identical output.
  */
 export function drawLegend({ ctx, width, height, settings, at }: DrawArgs) {
-  const rawLines = legendLines(settings, at);
-  if (rawLines.length === 0) return;
-
+  const parts = legendParts(settings, at);
   const scale = width / REFERENCE_WIDTH;
-  const size = Math.max(8, settings.fontSize * scale);
-  const lineHeight = size * 1.42;
-  const padX = size * 0.9;
-  const padY = size * 0.72;
+  const m = metricsFor(Math.max(7, settings.fontSize * scale));
   const stack = fontStack(settings.fontFamily);
-  let isEdgeBar =
-    settings.legendPosition === "atas" || settings.legendPosition === "bawah";
+
+  const font = (size: number, w: number) => `${w} ${size}px ${stack}`;
+  const measure = (text: string, size: number, w: number) => {
+    ctx.font = font(size, w);
+    return ctx.measureText(text).width;
+  };
 
   ctx.save();
   ctx.textBaseline = "top";
-  ctx.font = `500 ${size}px ${stack}`;
 
-  // Side blocks get a narrower budget than edge bars, which may span the photo.
-  const budget = (isEdgeBar ? width : width * 0.82) - padX * 2;
-  const lines = rawLines.flatMap((line) => wrap(ctx, line, budget));
+  // ── Head: clock | divider | date over weekday ──────────────────────────
+  const timeW = measure(parts.time, m.clock, weight.clock);
+  const metaW = Math.max(
+    measure(parts.date, m.meta, weight.meta),
+    measure(parts.day, m.meta, weight.meta),
+  );
+  const headW = timeW + m.dividerGap + m.dividerWidth + m.dividerGap + metaW;
+  const headH = Math.max(m.clock * 0.94, m.metaLine * 2);
 
-  const textWidth = Math.max(...lines.map((l) => ctx.measureText(l).width));
-  const blockH = lines.length * lineHeight - (lineHeight - size) + padY * 2;
-  let blockW = isEdgeBar ? width : textWidth + padX * 2;
-  // A side block wider than the photo becomes a full-width bar rather than
-  // running the text off the edge.
-  if (!isEdgeBar && blockW > width - size) {
-    isEdgeBar = true;
-    blockW = width;
+  // ── Body: the address, wrapped ────────────────────────────────────────
+  const sideBlock =
+    settings.legendPosition === "kiri" || settings.legendPosition === "kanan";
+  let contentBudget = (sideBlock ? width * 0.86 : width) - m.padX * 2;
+
+  ctx.font = font(m.body, weight.body);
+  let addressLines = parts.address ? wrap(ctx, parts.address, contentBudget) : [];
+  ctx.font = font(m.foot, weight.foot);
+  let footLines = parts.coords ? wrap(ctx, parts.coords, contentBudget) : [];
+
+  const widest = () =>
+    Math.max(
+      headW,
+      ...addressLines.map((l) => measure(l, m.body, weight.body)),
+      ...footLines.map((l) => measure(l, m.foot, weight.foot)),
+    );
+
+  // A side block wider than the photo becomes a full-width band rather than
+  // running off the edge.
+  let isBand = !sideBlock;
+  if (sideBlock && widest() + m.padX * 2 > width - m.body) {
+    isBand = true;
+    contentBudget = width - m.padX * 2;
+    ctx.font = font(m.body, weight.body);
+    addressLines = parts.address ? wrap(ctx, parts.address, contentBudget) : [];
+    ctx.font = font(m.foot, weight.foot);
+    footLines = parts.coords ? wrap(ctx, parts.coords, contentBudget) : [];
   }
+
+  const blockW = isBand ? width : Math.min(width, widest() + m.padX * 2);
+  const blockH =
+    m.padY +
+    headH +
+    (addressLines.length ? m.gapHeadToAddress + addressLines.length * m.bodyLine : 0) +
+    (footLines.length
+      ? m.gapAddressToRule + m.hairline + m.gapRuleToFoot + footLines.length * m.footLine
+      : 0) +
+    m.padY;
 
   let x = 0;
-  let y = 0;
-  if (settings.legendPosition === "atas") y = 0;
-  else if (isEdgeBar) y = height - blockH;
-  else {
-    y = height - blockH - size * 0.6;
-    x = settings.legendPosition === "kiri" ? size * 0.6 : width - blockW - size * 0.6;
+  let y = settings.legendPosition === "atas" ? 0 : height - blockH;
+  if (!isBand) {
+    y = height - blockH - m.body * 0.6;
+    x =
+      settings.legendPosition === "kiri"
+        ? m.body * 0.6
+        : width - blockW - m.body * 0.6;
   }
 
-  // Anchored right, the block reads from the right edge inward, so the text
-  // and the keyline mirror across with it.
   const alignRight = settings.legendPosition === "kanan";
+  const left = x + m.padX;
+  const right = x + blockW - m.padX;
 
   if (settings.showPlate) {
-    ctx.fillStyle = "rgba(12, 35, 51, 0.62)";
+    ctx.fillStyle = "rgba(12, 35, 51, 0.55)";
     ctx.fillRect(x, y, blockW, blockH);
-    // Citrus keyline on the leading edge — the app's one signature mark.
-    ctx.fillStyle = "#d6d871";
-    const keyline = Math.max(2, size * 0.11);
-    if (settings.legendPosition === "atas") ctx.fillRect(x, y + blockH - keyline, blockW, keyline);
-    else if (isEdgeBar) ctx.fillRect(x, y, blockW, keyline);
-    else if (alignRight) ctx.fillRect(x + blockW - keyline, y, keyline, blockH);
-    else ctx.fillRect(x, y, keyline, blockH);
   } else {
-    ctx.shadowColor = "rgba(0, 0, 0, 0.72)";
-    ctx.shadowBlur = size * 0.35;
-    ctx.shadowOffsetY = size * 0.06;
+    // The reference sets its text straight on the photo; a shadow is what
+    // keeps it readable over a bright sky.
+    ctx.shadowColor = "rgba(0, 0, 0, 0.75)";
+    ctx.shadowBlur = m.body * 0.42;
+    ctx.shadowOffsetY = m.body * 0.07;
   }
+
+  let cursor = y + m.padY;
+
+  // Head row. Mirrored when the block hugs the right edge.
+  const headLeft = alignRight ? right - headW : left;
+  const timeX = alignRight ? headLeft + metaW + m.dividerGap * 2 + m.dividerWidth : headLeft;
+  const dividerX = alignRight
+    ? headLeft + metaW + m.dividerGap
+    : headLeft + timeW + m.dividerGap;
+  const metaX = alignRight ? headLeft + metaW : dividerX + m.dividerWidth + m.dividerGap;
+
+  ctx.fillStyle = settings.fontColor;
+  ctx.textAlign = "left";
+  ctx.font = font(m.clock, weight.clock);
+  ctx.fillText(parts.time, timeX, cursor);
+
+  ctx.textAlign = alignRight ? "right" : "left";
+  ctx.font = font(m.meta, weight.meta);
+  const metaTop = cursor + (headH - m.metaLine * 2) / 2;
+  ctx.fillText(parts.date, metaX, metaTop + m.metaLine * 0.06);
+  ctx.fillText(parts.day, metaX, metaTop + m.metaLine);
+
+  // Gold divider, the one mark carried over from the app's own palette.
+  ctx.fillStyle = "#d6d871";
+  ctx.fillRect(dividerX, cursor + headH * 0.04, m.dividerWidth, headH * 0.9);
+
+  cursor += headH;
 
   ctx.fillStyle = settings.fontColor;
   ctx.textAlign = alignRight ? "right" : "left";
-  const inset = settings.showPlate && !isEdgeBar ? size * 0.2 : 0;
-  const textX = alignRight ? x + blockW - padX - inset : x + padX + inset;
-  lines.forEach((line, i) => {
-    ctx.fillText(line, textX, y + padY + i * lineHeight);
-  });
+  const textX = alignRight ? right : left;
+
+  if (addressLines.length) {
+    cursor += m.gapHeadToAddress;
+    ctx.font = font(m.body, weight.body);
+    addressLines.forEach((line, i) => {
+      ctx.fillText(line, textX, cursor + i * m.bodyLine);
+    });
+    cursor += addressLines.length * m.bodyLine;
+  }
+
+  if (footLines.length) {
+    cursor += m.gapAddressToRule;
+    const previousAlpha = ctx.globalAlpha;
+    ctx.globalAlpha = previousAlpha * 0.45;
+    ctx.fillRect(left, cursor, right - left, m.hairline);
+    ctx.globalAlpha = previousAlpha;
+    cursor += m.hairline + m.gapRuleToFoot;
+
+    ctx.font = font(m.foot, weight.foot);
+    footLines.forEach((line, i) => {
+      ctx.fillText(line, textX, cursor + i * m.footLine);
+    });
+  }
+
   ctx.restore();
 }
 

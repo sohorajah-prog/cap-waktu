@@ -518,12 +518,14 @@ export function StampStudio() {
               >
                 {DATE_FORMAT_GROUPS.map((group) => (
                   <optgroup key={group.label} label={group.label}>
-                    {group.formats.map((pattern) => (
-                      <option key={pattern} value={pattern}>
+                    {group.formats.map((option) => (
+                      <option key={option.value} value={option.value}>
                         {/* A fixed sample date: this control picks a format,
                             it does not set the time. The legend takes the
                             real clock. */}
-                        {formatStamp(SAMPLE_DATE, pattern)}
+                        {formatStamp(SAMPLE_DATE, option.date)}
+                        {" · "}
+                        {formatStamp(SAMPLE_DATE, option.time)}
                       </option>
                     ))}
                   </optgroup>
@@ -540,14 +542,29 @@ export function StampStudio() {
               />
             </Field>
 
-            <Field label="Jenis huruf">
-              <SegmentedControl
-                name="Jenis huruf"
+            {/* Five faces no longer fit a segmented row, so this is a select. */}
+            <Field label="Jenis huruf" htmlFor="jenis-huruf">
+              <SelectInput
+                id="jenis-huruf"
                 value={settings.fontFamily}
-                onChange={(fontFamily) => patch({ fontFamily })}
-                options={FONT_FAMILIES}
-              />
+                onChange={(e) =>
+                  patch({ fontFamily: e.target.value as StampSettings["fontFamily"] })
+                }
+              >
+                {FONT_FAMILIES.map((family) => (
+                  <option key={family.value} value={family.value}>
+                    {family.label}
+                  </option>
+                ))}
+              </SelectInput>
             </Field>
+            {settings.fontFamily === "ios" ? (
+              <p className="text-[0.72rem] leading-relaxed text-ink-45">
+                SF Pro tidak boleh disertakan dalam aplikasi web, jadi huruf ini
+                tampil apa adanya di perangkat Apple dan jatuh ke Helvetica di
+                perangkat lain.
+              </p>
+            ) : null}
 
             <Field
               label="Ukuran huruf"

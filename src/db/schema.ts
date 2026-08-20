@@ -45,7 +45,9 @@ export const results = sqliteTable(
     }).notNull(),
     fontSize: integer("font_size").notNull(),
     fontColor: text("font_color").notNull(),
-    fontFamily: text("font_family", { enum: ["sans", "mono", "serif"] }).notNull(),
+    fontFamily: text("font_family", {
+      enum: ["android", "ios", "sans", "mono", "serif"],
+    }).notNull(),
     // Bagian dari gaya legenda, di luar daftar kolom PRD.
     showPlate: integer("show_plate", { mode: "boolean" }).notNull().default(true),
     outputPath: text("output_path").notNull(),

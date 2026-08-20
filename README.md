@@ -17,7 +17,8 @@ diunduh dan tercatat di riwayat.
   tanggal berkas foto
 - Format tanggal sampai menit atau sampai detik, dengan zona waktu
   (WIB/WITA/WIT) yang mengikuti perangkat
-- Pengaturan legenda: posisi, jenis huruf, ukuran, warna
+- Jenis huruf Android (Roboto) dan iOS (SF Pro), selain Sans, Mono, dan Serif
+- Pengaturan legenda: posisi, ukuran, warna, alas gelap
 - Pratinjau langsung yang persis sama dengan hasil unduhan
 - Unduh JPG atau PNG, otomatis tersimpan ke Riwayat Hasil
 - Riwayat berbentuk lembar kontak, lengkap dengan detail pengaturan tiap hasil
@@ -102,25 +103,40 @@ npx drizzle-kit generate # migrasi baru setelah skema berubah
 
 ### Susunan legenda
 
-Satu unsur satu baris, dari waktu ke tempat, lalu melebar setingkat demi
-setingkat dari kelurahan sampai provinsi:
+Mengikuti berkas referensi: jam besar, garis pemisah, tanggal dan hari
+bertumpuk di sebelahnya, lalu alamat sebagai paragraf mengalir, garis tipis,
+dan koordinat di baris kaki.
 
 ```
-20/08/2026 08:14:37              format tanggal
-6.241586° LS  106.995400° BT     titik koordinat
-Gudang B, Jl. Raya Bekasi KM 24  detail tempat
-Kel. Margajaya                   kelurahan/desa
-Kecamatan Bekasi Selatan         kecamatan
-Kota Bekasi                      kabupaten/kota
-Jawa Barat                       provinsi
+08:38 │ 20 Agustus 2026
+      │ Kamis
+
+RW.6, Kel. Pulo Gebang, Kecamatan Cakung, Kota Administrasi
+Jakarta Timur, Daerah Khusus Ibukota Jakarta
+────────────────────────────────────────────────────────────
+6.199000° LS  106.945000° BT
 ```
 
-Posisi legenda **Kanan** membuat teksnya rata kanan dan garis citrus berpindah
-ke tepi kanan blok; posisi lain rata kiri.
+Referensinya menaruh kode verifikasi di baris kaki; di sini diisi koordinat.
+Aplikasi ini tidak punya sistem kode semacam itu, dan mencetak kode karangan
+pada dokumen bukti jelas keliru. Merek pada berkas referensi juga tidak
+ditiru — itu identitas aplikasi lain.
 
-Baris yang kosong dilewati, bukan disisakan kosong: tanpa koordinat, tanpa
-detail tempat, atau dengan wilayah yang hanya terisi sampai provinsi, legenda
-menyusut sendiri. Baris tanggal selalu ada.
+Bagian yang kosong dilewati: tanpa koordinat, garis tipis dan baris kaki ikut
+hilang. Posisi **Kanan** mencerminkan seluruh susunan, termasuk urutan jam dan
+garis pemisahnya.
+
+### Jenis huruf
+
+**Android** memakai Roboto, dimuat sebagai webfont supaya hasilnya sama entah
+dipakai dari ponsel atau komputer.
+
+**iOS** memakai tumpukan sistem Apple (`-apple-system`, SF Pro). Apple tidak
+mengizinkan SF Pro disertakan dalam aplikasi web, jadi huruf itu hanya tampil
+sebenarnya di perangkat Apple dan jatuh ke Helvetica di perangkat lain.
+Keterangan ini juga muncul di formulir saat opsi tersebut dipilih.
+
+Sans (Public Sans), Mono (Martian Mono), dan Serif (Georgia) tetap tersedia.
 
 ### Waktu pada legenda
 

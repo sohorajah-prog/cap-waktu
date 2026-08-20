@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Archivo, Public_Sans, Martian_Mono } from "next/font/google";
+import { Archivo, Public_Sans, Martian_Mono, Roboto } from "next/font/google";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import "./globals.css";
@@ -13,6 +13,14 @@ const archivo = Archivo({
 const publicSans = Public_Sans({
   variable: "--font-public-sans",
   subsets: ["latin"],
+});
+
+// Android's system face. Loaded rather than assumed, so the stamp renders the
+// same whether the app is used from a phone or a desktop.
+const roboto = Roboto({
+  variable: "--font-roboto",
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
 });
 
 const martianMono = Martian_Mono({
@@ -45,7 +53,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="id"
-      className={`${archivo.variable} ${publicSans.variable} ${martianMono.variable} h-full antialiased`}
+      className={`${archivo.variable} ${publicSans.variable} ${martianMono.variable} ${roboto.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
         <SiteHeader />

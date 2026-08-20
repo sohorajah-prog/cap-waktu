@@ -9,7 +9,7 @@ import { removeStored } from "./storage";
 export class InvalidInput extends Error {}
 
 const POSITIONS = ["bawah", "atas", "kiri", "kanan"] as const;
-const FAMILIES = ["sans", "mono", "serif"] as const;
+const FAMILIES = ["android", "ios", "sans", "mono", "serif"] as const;
 const FORMATS = ["jpg", "png"] as const;
 
 export type ResultSettingsInput = {
