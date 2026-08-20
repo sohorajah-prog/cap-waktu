@@ -189,12 +189,65 @@ menahan antrean dan menyimpan hasil selama 24 jam pada ketelitian ~11 m. Untuk
 lalu lintas nyata, gunakan instans Nominatim sendiri atau penyedia berbayar,
 dan setel `CAP_WAKTU_GEOCODER_UA` ke kontak Anda.
 
-## Catatan penerapan
+## Penerapan ke Coolify
 
-Versi ini menyimpan basis data dan berkas gambar di sistem berkas lokal, jadi
-**belum bisa dijalankan di platform serverless seperti Vercel**, yang sistem
-berkasnya bersifat sementara. Untuk ke sana, basis data perlu dipindah ke
-libSQL/Turso dan berkas gambar ke penyimpanan objek.
+Aplikasi ini menyimpan basis data dan gambar di sistem berkas, jadi butuh
+server dengan penyimpanan tetap. Coolify cocok; platform serverless seperti
+Vercel tidak (lihat catatan di bawah).
+
+### Langkah
+
+1. **New Resource → Application → Public/Private Repository**, arahkan ke repo
+   ini, branch `main`.
+2. **Build Pack: Dockerfile.** Coolify akan menemukan `Dockerfile` di akar
+   repo. Tidak perlu mengubah build command.
+3. **Port**: `3000`.
+4. **Persistent Storage** — ini bagian yang wajib:
+
+   | | |
+   |---|---|
+   | Name | `cap-waktu-data` |
+   | Mount Path | `/app/data` |
+
+   Tanpa volume ini, seluruh riwayat dan gambar hilang setiap kali wadahnya
+   dibuat ulang.
+5. **Environment Variables**: salin dari `.env.example`. Yang penting hanya
+   `CAP_WAKTU_GEOCODER_UA` — isi dengan kontak Anda, karena kebijakan
+   Nominatim mewajibkannya.
+6. **Health Check Path**: `/api/health`. Endpoint ini menyentuh basis data,
+   bukan sekadar menjawab 200, sehingga volume yang gagal ter-mount langsung
+   ketahuan.
+7. Deploy.
+
+Boot pertama menjalankan migrasi lalu memuat 91.019 wilayah ke basis data —
+sekitar 0,7 detik, sekali saja. Karena itu `start-period` health check disetel
+40 detik.
+
+### Yang perlu diperhatikan
+
+**Volume, bukan image.** Berkas `data/` sengaja dikeluarkan dari hasil build
+lewat `outputFileTracingExcludes`. Tanpa itu, penelusuran dependensi Next ikut
+menyalin seluruh isi folder data ke dalam image.
+
+**Cadangkan `/app/data`.** Isinya basis data SQLite beserta seluruh foto asli
+dan hasil. Tidak ada salinan di tempat lain.
+
+**Ukuran unggahan.** Batas aplikasi 20 MB per gambar, dan tiap unduhan
+menyimpan dua berkas (asli dan hasil). Bila ada reverse proxy di depan
+Coolify, pastikan batas unggahannya tidak lebih kecil.
+
+### Kenapa bukan Vercel
+
+Sistem berkas pada platform serverless bersifat sementara dan hanya-baca, jadi
+SQLite dan penyimpanan gambar lokal tidak akan bertahan. Untuk ke sana, basis
+data perlu dipindah ke libSQL/Turso dan gambar ke penyimpanan objek.
+
+### Menjalankan wadahnya secara lokal
+
+```bash
+docker build -t cap-waktu .
+docker run -p 3000:3000 -v cap-waktu-data:/app/data cap-waktu
+```
 
 Gambar asli ikut dikirim ke server agar tabel `uploads` terisi sesuai skema.
 Pemrosesan legenda tetap berjalan sepenuhnya di perangkat pengguna.

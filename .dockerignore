@@ -1,0 +1,16 @@
+node_modules
+.next
+data
+.git
+.gitignore
+Dockerfile
+.dockerignore
+README.md
+cap-waktu-PRD.md
+CLAUDE.md
+*.log
+npm-debug.log*
+tsconfig.tsbuildinfo
+next-env.d.ts
+CapWaktu.png
+referensi output.jpeg
